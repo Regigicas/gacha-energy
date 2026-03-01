@@ -80,12 +80,12 @@
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      padding: 0.55rem 1.1rem;
+      padding: 0.35rem 0.75rem;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       color: #fff;
-      font-size: 0.875rem;
+      font-size: 0.75rem;
       font-weight: 600;
       font-family: 'Inter', sans-serif;
       cursor: pointer;
@@ -442,9 +442,6 @@
       <span class="icon">⚡</span>
       <h1>Gacha Stamina Calculator</h1>
     </div>
-    <button class="add-btn" id="addGameBtn" onclick="addGame()">
-      <span>＋</span> Add Game
-    </button>
   </header>
 
   <div class="games-track-wrap">
@@ -680,6 +677,14 @@
       const header = document.querySelector('.page-header');
       const presetsWrap = document.createElement('div');
       presetsWrap.style.cssText = 'display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;';
+
+      // Add Game button first
+      const addBtn = document.createElement('button');
+      addBtn.id = 'addGameBtn';
+      addBtn.className = 'add-btn';
+      addBtn.innerHTML = '<span>＋</span> Add Game';
+      addBtn.onclick = () => addGame();
+      presetsWrap.appendChild(addBtn);
 
       PRESETS.forEach(p => {
         const btn = document.createElement('button');

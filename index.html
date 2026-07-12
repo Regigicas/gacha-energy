@@ -102,6 +102,34 @@
       transform: translateY(0);
     }
 
+    /* Quick-add preset buttons */
+    .preset-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.75rem;
+      font-family: 'Inter', sans-serif;
+      padding: 0.35rem 0.75rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    /* Row holding the Add Game + preset buttons */
+    .presets-wrap {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     /* ── Cards area ── */
     .games-track-wrap {
       flex: 1;
@@ -451,7 +479,7 @@
   </div>
 
   <footer class="page-footer">
-    <a href="https://github.com/Regigicas/gacha-energy" target="_blank" rel="noopener">
+    <a href="https://github.com/Regigicas/gacha-energy" target="_blank" rel="noopener" aria-label="View source on GitHub">
       <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path
           d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
@@ -461,6 +489,11 @@
 
   <script>
     let gameCounter = 0;
+
+    // Escape user-supplied text before interpolating into innerHTML
+    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
 
     const PRESETS = [
       { name: 'Genshin Impact', max: 200, regen: 8 },
@@ -479,7 +512,7 @@
         <div class="card-header">
           <input class="game-name-input" type="text"
             placeholder="Game name…"
-            value="${p.name}"
+            value="${escapeHtml(p.name)}"
             id="name-${id}"
             oninput="saveGameList()" />
           <button class="remove-btn" onclick="removeGame(${id})" title="Remove">✕</button>
@@ -497,12 +530,16 @@
         <div class="field">
           <label for="max-${id}">Max Stamina</label>
           <input type="number" id="max-${id}" min="1" value="${p.max}"
+            onblur="if(this.value==='')this.value='1'"
+            oninput="saveGameList()"
             onkeydown="if(event.key==='Enter')calculate(${id})" />
         </div>
 
         <div class="field">
           <label for="regen-${id}">Regen (min / 1 stamina)</label>
           <input type="number" id="regen-${id}" min="0.1" step="0.1" value="${p.regen}"
+            onblur="if(this.value==='')this.value='0.1'"
+            oninput="saveGameList()"
             onkeydown="if(event.key==='Enter')calculate(${id})" />
         </div>
 
@@ -628,7 +665,7 @@
       const fullAt = new Date(now.getTime() + totalMinutes * 60000);
       const fullAtTime = fullAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const today = new Date(now); today.setHours(0, 0, 0, 0);
       const fullDay = new Date(fullAt); fullDay.setHours(0, 0, 0, 0);
       const dayDiff = Math.round((fullDay - today) / 86400000);
       const dateSub = dayDiff === 0 ? 'Today'
@@ -660,12 +697,11 @@
       if (!show && existing) existing.remove();
     }
 
-    // ── Preset quick-add dropdown ──
-    // Seed with the three popular presets on load
+    // ── Restore state and build the quick-add preset buttons ──
     window.addEventListener('DOMContentLoaded', () => {
       const track = document.getElementById('gamesTrack');
 
-      // Restore saved game list
+      // Restore saved game list, or show the empty state
       const saved = JSON.parse(localStorage.getItem('gachaGameList') || 'null');
       if (saved && saved.length > 0) {
         saved.forEach(g => addGame(g));
@@ -673,12 +709,10 @@
         updateEmptyState(track, true);
       }
 
-      // Add preset buttons under the Add button
-      const header = document.querySelector('.page-header');
+      // Build the button row in the header: Add Game first, then one button per preset
       const presetsWrap = document.createElement('div');
-      presetsWrap.style.cssText = 'display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;';
+      presetsWrap.className = 'presets-wrap';
 
-      // Add Game button first
       const addBtn = document.createElement('button');
       addBtn.id = 'addGameBtn';
       addBtn.className = 'add-btn';
@@ -688,26 +722,13 @@
 
       PRESETS.forEach(p => {
         const btn = document.createElement('button');
+        btn.className = 'preset-btn';
         btn.textContent = '＋ ' + p.name;
-        btn.style.cssText = `
-          background: var(--surface2);
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          color: var(--text);
-          font-size: 0.75rem;
-          font-family: 'Inter', sans-serif;
-          padding: 0.35rem 0.75rem;
-          cursor: pointer;
-          transition: border-color 0.15s, background 0.15s;
-          white-space: nowrap;
-        `;
-        btn.onmouseenter = () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--surface)'; };
-        btn.onmouseleave = () => { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--surface2)'; };
         btn.onclick = () => addGame(p);
         presetsWrap.appendChild(btn);
       });
 
-      header.appendChild(presetsWrap);
+      document.querySelector('.page-header').appendChild(presetsWrap);
     });
   </script>
 </body>

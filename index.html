@@ -3,9 +3,27 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Gacha Stamina Calculator</title>
   <meta name="description" content="Track stamina replenishment across multiple gacha games at once." />
+
+  <!-- PWA: web app manifest + theme -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0d0f1a" />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- Icons (Android / Windows / general) -->
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="icons/favicon-16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png" />
+
+  <!-- Apple (iOS / iPadOS / macOS Safari) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Gacha Stamina" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -51,6 +69,10 @@
       align-items: center;
       justify-content: space-between;
       padding: 1.5rem 2rem;
+      /* Respect the iOS safe area (notch / status bar) when installed */
+      padding-top: calc(1.5rem + env(safe-area-inset-top));
+      padding-left: calc(2rem + env(safe-area-inset-left));
+      padding-right: calc(2rem + env(safe-area-inset-right));
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
@@ -437,6 +459,7 @@
       justify-content: center;
       align-items: center;
       padding: 1rem 2rem;
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom));
       border-top: 1px solid var(--border);
     }
 
@@ -730,6 +753,15 @@
 
       document.querySelector('.page-header').appendChild(presetsWrap);
     });
+
+    // ── PWA: register the service worker for offline support & installability ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((err) => {
+          console.warn('Service worker registration failed:', err);
+        });
+      });
+    }
   </script>
 </body>
 

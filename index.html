@@ -7,6 +7,12 @@
   <title>Gacha Stamina Calculator</title>
   <meta name="description" content="Track stamina replenishment across multiple gacha games at once." />
 
+  <!-- Defence in depth: no external scripts, no framing of remote content, no
+       form posts, no outbound connections. The inline <script>/<style> still
+       need 'unsafe-inline'; moving them to separate files would allow dropping
+       it. Note that frame-ancestors is ignored in a <meta> CSP. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
+
   <!-- PWA: web app manifest + theme -->
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#0d0f1a" />
@@ -24,9 +30,13 @@
   <meta name="apple-mobile-web-app-title" content="Gacha Stamina" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Link previews -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Gacha Stamina Calculator" />
+  <meta property="og:description" content="Track stamina replenishment across multiple gacha games at once." />
+  <meta property="og:image" content="icons/icon-512.png" />
+  <meta name="twitter:card" content="summary" />
+
   <style>
     *,
     *::before,
@@ -34,6 +44,10 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     :root {
@@ -49,18 +63,33 @@
       --success: #34d399;
       --danger: #f87171;
       --glow: rgba(124, 141, 255, 0.25);
+      /* Self-contained font stack: no third-party request, works offline and
+         leaks nothing to a font CDN. */
+      --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font);
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       background-image:
         radial-gradient(ellipse 80% 40% at 50% -10%, rgba(124, 141, 255, 0.1), transparent),
         radial-gradient(ellipse 50% 40% at 90% 90%, rgba(167, 139, 250, 0.07), transparent);
+    }
+
+    button,
+    input {
+      font-family: inherit;
+    }
+
+    /* Visible focus ring for keyboard users everywhere. */
+    :focus-visible {
+      outline: 2px solid var(--accent3);
+      outline-offset: 2px;
     }
 
     /* ── Page header ── */
@@ -112,7 +141,6 @@
       color: #fff;
       font-size: 0.75rem;
       font-weight: 600;
-      font-family: 'Inter', sans-serif;
       cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
       box-shadow: 0 4px 20px rgba(124, 141, 255, 0.3);
@@ -134,7 +162,6 @@
       border-radius: 8px;
       color: var(--text);
       font-size: 0.75rem;
-      font-family: 'Inter', sans-serif;
       padding: 0.35rem 0.75rem;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
@@ -182,7 +209,9 @@
 
     .games-track {
       display: grid;
-      grid-template-columns: repeat(auto-fit, 300px);
+      /* Cap columns at 300px but let them shrink on very narrow screens
+         instead of overflowing the viewport. */
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 300px));
       gap: 1.25rem;
       justify-content: center;
       align-content: flex-start;
@@ -223,13 +252,13 @@
 
     .game-name-input {
       flex: 1;
+      min-width: 0;
       background: transparent;
       border: none;
       border-bottom: 1px solid var(--border);
       color: var(--text);
       font-size: 1rem;
       font-weight: 600;
-      font-family: 'Inter', sans-serif;
       padding: 0.2rem 0;
       outline: none;
       transition: border-color 0.2s;
@@ -261,8 +290,12 @@
       border-color: var(--danger);
     }
 
-    /* Field */
-    .field label {
+    /* Field — the <label> wraps its input, so no id/for pairing is needed. */
+    .field {
+      display: block;
+    }
+
+    .field-label {
       display: block;
       font-size: 0.72rem;
       font-weight: 600;
@@ -280,7 +313,6 @@
       padding: 0.65rem 0.85rem;
       color: var(--text);
       font-size: 0.95rem;
-      font-family: 'Inter', sans-serif;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
@@ -298,6 +330,7 @@
     .bar-label {
       display: flex;
       justify-content: space-between;
+      gap: 0.5rem;
       font-size: 0.72rem;
       font-weight: 600;
       color: var(--muted);
@@ -333,7 +366,6 @@
       color: #fff;
       font-size: 0.9rem;
       font-weight: 600;
-      font-family: 'Inter', sans-serif;
       cursor: pointer;
       transition: transform 0.15s, box-shadow 0.15s;
       box-shadow: 0 4px 20px rgba(124, 141, 255, 0.3);
@@ -350,12 +382,7 @@
 
     /* Result */
     .result {
-      display: none;
       animation: fadeUp 0.25s ease;
-    }
-
-    .result.visible {
-      display: block;
     }
 
     @keyframes fadeUp {
@@ -400,6 +427,7 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      font-variant-numeric: tabular-nums;
     }
 
     .rc-sub {
@@ -423,6 +451,9 @@
       color: var(--danger);
       font-size: 0.78rem;
       margin-top: 0.3rem;
+    }
+
+    .error-msg:empty {
       display: none;
     }
 
@@ -433,8 +464,9 @@
       align-items: center;
       justify-content: center;
       gap: 1rem;
-      min-width: 260px;
+      width: 100%;
       min-height: 300px;
+      background: none;
       border: 1.5px dashed var(--border);
       border-radius: 20px;
       color: var(--muted);
@@ -507,6 +539,28 @@
         padding: 1.25rem;
       }
     }
+
+    /* Gradient text is invisible in Windows high-contrast mode. */
+    @media (forced-colors: active) {
+
+      .page-title h1,
+      .rc-value {
+        background: none;
+        -webkit-text-fill-color: currentColor;
+        color: CanvasText;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
   </style>
 </head>
 
@@ -517,16 +571,24 @@
       <img class="icon" src="icons/icon-192.png" width="192" height="192" alt="" />
       <h1>Gacha Stamina Calculator</h1>
     </div>
+    <div class="presets-wrap" id="presetsWrap">
+      <button type="button" class="add-btn" id="addGameBtn"><span aria-hidden="true">＋</span> Add Game</button>
+      <!-- Preset buttons injected here -->
+    </div>
   </header>
 
   <div class="games-track-wrap">
     <div class="games-track" id="gamesTrack">
       <!-- Cards injected here -->
     </div>
+    <noscript>
+      <p style="text-align:center;color:#8892b0">This calculator needs JavaScript enabled.</p>
+    </noscript>
   </div>
 
   <footer class="page-footer">
-    <a href="https://github.com/Regigicas/gacha-energy" target="_blank" rel="noopener" aria-label="View source on GitHub">
+    <a href="https://github.com/Regigicas/gacha-energy" target="_blank" rel="noopener noreferrer"
+      aria-label="View source on GitHub">
       <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path
           d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
@@ -534,258 +596,426 @@
     </a>
   </footer>
 
+  <!-- Card markup lives here so no user-supplied value is ever interpolated
+       into an HTML string; values are assigned through .value / .textContent. -->
+  <template id="cardTemplate">
+    <article class="game-card">
+      <div class="card-header">
+        <input class="game-name-input js-name" type="text" placeholder="Game name…" aria-label="Game name"
+          maxlength="120" autocomplete="off" />
+        <button type="button" class="remove-btn js-remove" aria-label="Remove game" title="Remove game">✕</button>
+      </div>
+
+      <label class="field">
+        <span class="field-label">Current Stamina</span>
+        <input class="js-cur" type="number" min="0" step="any" inputmode="decimal" />
+      </label>
+      <p class="error-msg js-err" role="alert"></p>
+
+      <label class="field">
+        <span class="field-label">Max Stamina</span>
+        <input class="js-max" type="number" min="1" step="any" inputmode="decimal" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Regen (min / 1 stamina)</span>
+        <input class="js-regen" type="number" min="0.1" step="0.1" inputmode="decimal" />
+      </label>
+
+      <div class="js-bar-wrap" hidden>
+        <div class="bar-label">
+          <span>Stamina</span>
+          <span class="js-bar-pct">0%</span>
+        </div>
+        <div class="bar-track" role="progressbar" aria-label="Stamina" aria-valuemin="0" aria-valuemax="100"
+          aria-valuenow="0">
+          <div class="bar-fill js-bar-fill"></div>
+        </div>
+      </div>
+
+      <button type="button" class="calc-btn js-calc">Calculate ⚡</button>
+
+      <div class="result js-result" hidden>
+        <div class="full-message js-full-msg" hidden>✅ Stamina is already full!</div>
+        <div class="result-grid js-grid">
+          <div class="result-card">
+            <div class="rc-label">Time Remaining</div>
+            <div class="rc-value js-time-rem">—</div>
+            <div class="rc-sub js-time-rem-sub"></div>
+          </div>
+          <div class="result-card">
+            <div class="rc-label">Full At</div>
+            <div class="rc-value js-full-at">—</div>
+            <div class="rc-sub js-full-at-sub"></div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </template>
+
   <script>
-    let gameCounter = 0;
+    (() => {
+      'use strict';
 
-    // Escape user-supplied text before interpolating into innerHTML
-    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
+      const STORAGE_KEY = 'gachaGameList';
+      const MAX_GAMES = 50;
+      const DEFAULTS = { name: '', cur: 0, max: 240, regen: 6 };
 
-    const PRESETS = [
-      { name: 'Genshin Impact', max: 200, regen: 8 },
-      { name: 'Honkai: Star Rail', max: 240, regen: 6 },
-      { name: 'Zenless Zone Zero', max: 240, regen: 6 },
-    ];
-
-    function addGame(preset = null) {
-      const id = ++gameCounter;
-      const p = preset || { name: '', max: 240, regen: 6 };
-
-      const card = document.createElement('div');
-      card.classList.add('game-card');
-      card.id = `card-${id}`;
-      card.innerHTML = `
-        <div class="card-header">
-          <input class="game-name-input" type="text"
-            placeholder="Game name…"
-            value="${escapeHtml(p.name)}"
-            id="name-${id}"
-            oninput="saveGameList()" />
-          <button class="remove-btn" onclick="removeGame(${id})" title="Remove">✕</button>
-        </div>
-
-        <div class="field">
-          <label for="cur-${id}">Current Stamina</label>
-          <input type="number" id="cur-${id}" min="0" value="${p.cur ?? 0}"
-            onblur="if(this.value==='')this.value='0'"
-            oninput="saveGameList()"
-            onkeydown="if(event.key==='Enter')calculate(${id})" />
-          <div class="error-msg" id="err-${id}"></div>
-        </div>
-
-        <div class="field">
-          <label for="max-${id}">Max Stamina</label>
-          <input type="number" id="max-${id}" min="1" value="${p.max}"
-            onblur="if(this.value==='')this.value='1'"
-            oninput="saveGameList()"
-            onkeydown="if(event.key==='Enter')calculate(${id})" />
-        </div>
-
-        <div class="field">
-          <label for="regen-${id}">Regen (min / 1 stamina)</label>
-          <input type="number" id="regen-${id}" min="0.1" step="0.1" value="${p.regen}"
-            onblur="if(this.value==='')this.value='0.1'"
-            oninput="saveGameList()"
-            onkeydown="if(event.key==='Enter')calculate(${id})" />
-        </div>
-
-        <div id="barWrap-${id}" style="display:none">
-          <div class="bar-label">
-            <span>Stamina</span>
-            <span id="barPct-${id}">0%</span>
-          </div>
-          <div class="bar-track">
-            <div class="bar-fill" id="barFill-${id}"></div>
-          </div>
-        </div>
-
-        <button class="calc-btn" onclick="calculate(${id})">Calculate ⚡</button>
-
-        <div class="result" id="result-${id}">
-          <div class="full-message" id="fullMsg-${id}" style="display:none">✅ Stamina is already full!</div>
-          <div class="result-grid" id="grid-${id}">
-            <div class="result-card">
-              <div class="rc-label">Time Remaining</div>
-              <div class="rc-value" id="timeRem-${id}">—</div>
-              <div class="rc-sub"  id="timeRemSub-${id}"></div>
-            </div>
-            <div class="result-card">
-              <div class="rc-label">Full At</div>
-              <div class="rc-value" id="fullAt-${id}">—</div>
-              <div class="rc-sub"  id="fullAtSub-${id}"></div>
-            </div>
-          </div>
-        </div>
-      `;
+      const PRESETS = [
+        { name: 'Genshin Impact', max: 200, regen: 8 },
+        { name: 'Honkai: Star Rail', max: 240, regen: 6 },
+        { name: 'Zenless Zone Zero', max: 240, regen: 6 },
+      ];
 
       const track = document.getElementById('gamesTrack');
-      updateEmptyState(track, false);         // hide empty state if showing
-      track.appendChild(card);
-      saveGameList();
+      const template = document.getElementById('cardTemplate');
 
-      // Scroll new card into view
-      requestAnimationFrame(() => card.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' }));
-    }
+      /* Cards with a running countdown: card element -> { fullAt, max, regen }. */
+      const live = new Map();
+      let ticker = null;
+      let saveTimer = null;
 
-    function removeGame(id) {
-      const card = document.getElementById(`card-${id}`);
-      if (card) {
+      /* ── Persistence ─────────────────────────────────────────────────────
+         Anything read back from localStorage is untrusted: it is shared with
+         every other page on the origin (all repos share one origin on GitHub
+         Pages). Coerce to primitives here, and never build HTML from it. */
+
+      const toFinite = (value, fallback) => {
+        const n = typeof value === 'number' ? value : parseFloat(value);
+        return Number.isFinite(n) ? n : fallback;
+      };
+
+      function normalizeGame(raw) {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+        return {
+          name: typeof raw.name === 'string' ? raw.name.slice(0, 120) : DEFAULTS.name,
+          cur: toFinite(raw.cur, DEFAULTS.cur),
+          max: toFinite(raw.max, DEFAULTS.max),
+          regen: toFinite(raw.regen, DEFAULTS.regen),
+          savedAt: toFinite(raw.savedAt, 0),
+        };
+      }
+
+      /* Stamina earned while the app was closed. Whole units only, matching how
+         the games themselves tick. Ignores clock skew and unusable settings. */
+      function applyElapsedRegen(game) {
+        if (!(game.savedAt > 0) || !(game.regen > 0) || !(game.max > 0)) return game;
+        if (!(game.cur < game.max)) return game;
+        const elapsedMinutes = (Date.now() - game.savedAt) / 60000;
+        if (!(elapsedMinutes > 0)) return game;
+        const gained = Math.floor(elapsedMinutes / game.regen);
+        if (gained > 0) game.cur = Math.min(game.max, game.cur + gained);
+        return game;
+      }
+
+      function loadGames() {
+        let raw;
+        try {
+          raw = localStorage.getItem(STORAGE_KEY);
+        } catch {
+          return []; // storage blocked (private mode, third-party cookie rules)
+        }
+        if (!raw) return [];
+        let parsed;
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          return []; // corrupt value: start clean rather than breaking the app
+        }
+        if (!Array.isArray(parsed)) return [];
+        return parsed.slice(0, MAX_GAMES).map(normalizeGame).filter(Boolean).map(applyElapsedRegen);
+      }
+
+      function saveGames() {
+        saveTimer = null;
+        const list = [...track.querySelectorAll('.game-card')].map(readCard);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        } catch {
+          /* Quota or private mode: the session keeps working in memory. */
+        }
+      }
+
+      function scheduleSave() {
+        if (saveTimer !== null) clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveGames, 300);
+      }
+
+      function flushSave() {
+        if (saveTimer !== null) {
+          clearTimeout(saveTimer);
+          saveGames();
+        }
+      }
+
+      /* Store exactly what is in the field so a value is never silently
+         rewritten; validity is enforced by calculate(), which explains itself. */
+      function readCard(card) {
+        return {
+          name: card.querySelector('.js-name').value,
+          cur: toFinite(card.querySelector('.js-cur').value, DEFAULTS.cur),
+          max: toFinite(card.querySelector('.js-max').value, DEFAULTS.max),
+          regen: toFinite(card.querySelector('.js-regen').value, DEFAULTS.regen),
+          savedAt: Date.now(),
+        };
+      }
+
+      /* ── Formatting ───────────────────────────────────────────────────── */
+
+      function formatDuration(totalSeconds) {
+        const total = Math.max(0, Math.round(totalSeconds));
+        const hours = Math.floor(total / 3600);
+        const minutes = Math.floor((total % 3600) / 60);
+        const seconds = total % 60;
+        if (hours > 0) return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+        if (minutes > 0) return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+        return `${seconds}s`;
+      }
+
+      function dayLabel(target, now) {
+        const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+        const startOfTarget = new Date(target); startOfTarget.setHours(0, 0, 0, 0);
+        const days = Math.round((startOfTarget - startOfToday) / 86400000);
+        if (days === 0) return 'Today';
+        if (days === 1) return 'Tomorrow';
+        if (days > 1 && days < 7) return target.toLocaleDateString([], { weekday: 'long' });
+        return target.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+
+      /* Trim binary-float noise without turning 0.1 into 0.1000000000000001. */
+      const tidy = (n) => Math.round(n * 100) / 100;
+
+      /* ── Calculation ──────────────────────────────────────────────────── */
+
+      function showError(card, message) {
+        card.querySelector('.js-err').textContent = message;
+      }
+
+      /* Anchors the countdown to "now". Returns false when the inputs cannot
+         produce a result; `explain` controls whether the user is told why, so
+         typing mid-edit does not flash errors. */
+      function calculate(card, explain = true) {
+        const cur = parseFloat(card.querySelector('.js-cur').value);
+        const max = parseFloat(card.querySelector('.js-max').value);
+        const regen = parseFloat(card.querySelector('.js-regen').value);
+
+        showError(card, '');
+
+        let problem = '';
+        if (!Number.isFinite(cur)) problem = 'Enter current stamina.';
+        else if (!Number.isFinite(max) || max <= 0) problem = 'Max stamina must be > 0.';
+        else if (!Number.isFinite(regen) || regen <= 0) problem = 'Regen interval must be > 0.';
+        else if (cur < 0) problem = 'Cannot be negative.';
+        else if (cur > max) problem = 'Exceeds max stamina.';
+
+        if (problem) {
+          if (explain) showError(card, problem);
+          stopLive(card);
+          card.querySelector('.js-result').hidden = true;
+          card.querySelector('.js-bar-wrap').hidden = true;
+          return false;
+        }
+
+        const remainingMinutes = (max - cur) * regen;
+        const state = { fullAt: Date.now() + remainingMinutes * 60000, max, regen };
+        card.querySelector('.js-result').hidden = false;
+        card.querySelector('.js-bar-wrap').hidden = false;
+
+        if (remainingMinutes <= 0) {
+          stopLive(card);
+          render(card, state, state.fullAt);
+        } else {
+          live.set(card, state);
+          render(card, state, Date.now());
+          ensureTicker();
+        }
+        return true;
+      }
+
+      function render(card, state, now) {
+        const { fullAt, max, regen } = state;
+        const remainingSeconds = Math.max(0, (fullAt - now) / 1000);
+        const current = Math.min(max, Math.max(0, max - (remainingSeconds / 60) / regen));
+        const pct = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
+        /* Floor, so a nearly-full bar never claims 100% before it really is. */
+        const shown = Math.floor(pct);
+
+        card.querySelector('.js-bar-fill').style.width = pct + '%';
+        card.querySelector('.js-bar-pct').textContent =
+          `${Math.floor(current)} / ${tidy(max)} · ${shown}%`;
+        card.querySelector('.bar-track').setAttribute('aria-valuenow', String(shown));
+
+        const isFull = remainingSeconds <= 0;
+        card.querySelector('.js-full-msg').hidden = !isFull;
+        card.querySelector('.js-grid').hidden = isFull;
+        if (isFull) return;
+
+        const fullAtDate = new Date(fullAt);
+        card.querySelector('.js-time-rem').textContent = formatDuration(remainingSeconds);
+        card.querySelector('.js-time-rem-sub').textContent =
+          `${Math.ceil(max - current)} stamina to restore`;
+        card.querySelector('.js-full-at').textContent =
+          fullAtDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        card.querySelector('.js-full-at-sub').textContent = dayLabel(fullAtDate, new Date(now));
+      }
+
+      /* ── Live countdown ───────────────────────────────────────────────── */
+
+      function tick() {
+        const now = Date.now();
+        for (const [card, state] of [...live]) {
+          render(card, state, now);
+          if (now >= state.fullAt) {
+            live.delete(card);
+            /* Reflect the refilled value back into the field so a reload,
+               and the next save, both start from the truth. */
+            card.querySelector('.js-cur').value = tidy(state.max);
+            scheduleSave();
+          }
+        }
+        ensureTicker();
+      }
+
+      function stopLive(card) {
+        live.delete(card);
+        ensureTicker();
+      }
+
+      function ensureTicker() {
+        const wanted = live.size > 0 && document.visibilityState === 'visible';
+        if (wanted && ticker === null) ticker = setInterval(tick, 1000);
+        else if (!wanted && ticker !== null) {
+          clearInterval(ticker);
+          ticker = null;
+        }
+      }
+
+      /* ── Cards ────────────────────────────────────────────────────────── */
+
+      function addGame(preset = null, { autoCalculate = true, scroll = true } = {}) {
+        if (track.querySelectorAll('.game-card').length >= MAX_GAMES) return null;
+
+        const game = normalizeGame(preset) || { ...DEFAULTS };
+        const card = template.content.firstElementChild.cloneNode(true);
+
+        card.querySelector('.js-name').value = game.name;
+        card.querySelector('.js-cur').value = tidy(game.cur);
+        card.querySelector('.js-max').value = tidy(game.max);
+        card.querySelector('.js-regen').value = tidy(game.regen);
+
+        card.querySelector('.js-remove').addEventListener('click', () => removeGame(card));
+        card.querySelector('.js-calc').addEventListener('click', () => calculate(card));
+
+        card.querySelector('.js-name').addEventListener('input', scheduleSave);
+
+        for (const selector of ['.js-cur', '.js-max', '.js-regen']) {
+          const input = card.querySelector(selector);
+          input.addEventListener('input', () => {
+            scheduleSave();
+            /* Keep an already-visible result in sync, quietly. */
+            if (!card.querySelector('.js-result').hidden) calculate(card, false);
+          });
+          input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              calculate(card);
+            }
+          });
+        }
+
+        updateEmptyState(false);
+        track.appendChild(card);
+        if (autoCalculate) calculate(card, false);
+        scheduleSave();
+
+        if (scroll) {
+          requestAnimationFrame(() =>
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' }));
+        }
+        return card;
+      }
+
+      function removeGame(card) {
+        stopLive(card);
         card.style.transition = 'opacity 0.2s, transform 0.2s';
         card.style.opacity = '0';
         card.style.transform = 'scale(0.95)';
         setTimeout(() => {
           card.remove();
-          saveGameList();
-          const track = document.getElementById('gamesTrack');
-          if (track.querySelectorAll('.game-card').length === 0) updateEmptyState(track, true);
+          flushSave();
+          saveGames();
+          if (track.querySelectorAll('.game-card').length === 0) updateEmptyState(true);
         }, 200);
       }
-    }
 
-    function saveGameList() {
-      const cards = [...document.querySelectorAll('.game-card')];
-      const list = cards.map(card => {
-        const id = card.id.replace('card-', '');
-        return {
-          name: document.getElementById(`name-${id}`).value,
-          cur: parseFloat(document.getElementById(`cur-${id}`).value) || 0,
-          max: parseFloat(document.getElementById(`max-${id}`).value) || 240,
-          regen: parseFloat(document.getElementById(`regen-${id}`).value) || 6,
-        };
-      });
-      localStorage.setItem('gachaGameList', JSON.stringify(list));
-    }
+      function updateEmptyState(show) {
+        const existing = document.getElementById('emptyState');
+        if (show === !!existing) return;
+        if (!show) {
+          existing.remove();
+          return;
+        }
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.id = 'emptyState';
+        button.className = 'empty-state';
+        button.addEventListener('click', () => addGame());
 
-    function showError(id, msg) {
-      const el = document.getElementById(`err-${id}`);
-      el.textContent = msg;
-      el.style.display = msg ? 'block' : 'none';
-    }
+        const icon = document.createElement('span');
+        icon.className = 'es-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = '🎮';
 
-    function calculate(id) {
-      const cur = parseFloat(document.getElementById(`cur-${id}`).value);
-      const max = parseFloat(document.getElementById(`max-${id}`).value);
-      const regen = parseFloat(document.getElementById(`regen-${id}`).value);
+        const text = document.createElement('span');
+        text.textContent = 'No games yet. Click to add one.';
 
-      showError(id, '');
-
-      if (isNaN(cur)) { showError(id, 'Enter current stamina.'); return; }
-      if (isNaN(max) || max <= 0) { showError(id, 'Max stamina must be > 0.'); return; }
-      if (isNaN(regen) || regen <= 0) { showError(id, 'Regen interval must be > 0.'); return; }
-      if (cur < 0) { showError(id, 'Cannot be negative.'); return; }
-      if (cur > max) { showError(id, 'Exceeds max stamina.'); return; }
-
-      const missing = max - cur;
-      const totalMinutes = missing * regen;
-
-      // Stamina bar
-      const pct = Math.round((cur / max) * 100);
-      document.getElementById(`barWrap-${id}`).style.display = 'block';
-      document.getElementById(`barFill-${id}`).style.width = pct + '%';
-      document.getElementById(`barPct-${id}`).textContent = pct + '%';
-
-      const result = document.getElementById(`result-${id}`);
-      const fullMsg = document.getElementById(`fullMsg-${id}`);
-      const grid = document.getElementById(`grid-${id}`);
-
-      result.classList.add('visible');
-
-      if (missing === 0) {
-        fullMsg.style.display = 'block';
-        grid.style.display = 'none';
-        return;
+        button.append(icon, text);
+        track.appendChild(button);
       }
 
-      fullMsg.style.display = 'none';
-      grid.style.display = 'grid';
+      /* ── Boot ─────────────────────────────────────────────────────────── */
 
-      const hours = Math.floor(totalMinutes / 60);
-      const mins = Math.round(totalMinutes % 60);
+      /* Controls are wired before any stored data is touched, so a storage
+         failure can never leave the page without a way to add a game. */
+      document.getElementById('addGameBtn').addEventListener('click', () => addGame());
 
-      let timeStr = '';
-      if (hours > 0 && mins > 0) timeStr = `${hours}h ${mins}m`;
-      else if (hours > 0) timeStr = `${hours}h`;
-      else timeStr = `${mins}m`;
+      const presetsWrap = document.getElementById('presetsWrap');
+      for (const preset of PRESETS) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'preset-btn';
+        button.textContent = '＋ ' + preset.name;
+        button.addEventListener('click', () => addGame(preset));
+        presetsWrap.appendChild(button);
+      }
 
-      const now = new Date();
-      const fullAt = new Date(now.getTime() + totalMinutes * 60000);
-      const fullAtTime = fullAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      const today = new Date(now); today.setHours(0, 0, 0, 0);
-      const fullDay = new Date(fullAt); fullDay.setHours(0, 0, 0, 0);
-      const dayDiff = Math.round((fullDay - today) / 86400000);
-      const dateSub = dayDiff === 0 ? 'Today'
-        : dayDiff === 1 ? 'Tomorrow'
-          : fullAt.toLocaleDateString([], { weekday: 'long' });
-
-      document.getElementById(`timeRem-${id}`).textContent = timeStr;
-      document.getElementById(`timeRemSub-${id}`).textContent = `${missing} stamina to restore`;
-      document.getElementById(`fullAt-${id}`).textContent = fullAtTime;
-      document.getElementById(`fullAtSub-${id}`).textContent = dateSub;
-    }
-
-    // ── Empty state placeholder ──
-    function buildEmptyState() {
-      const div = document.createElement('div');
-      div.classList.add('empty-state');
-      div.id = 'emptyState';
-      div.onclick = () => addGame();
-      div.innerHTML = `
-        <span class="es-icon">🎮</span>
-        <span>No games yet.<br/>Click <strong>Add Game</strong> to get started.</span>
-      `;
-      return div;
-    }
-
-    function updateEmptyState(track, show) {
-      const existing = document.getElementById('emptyState');
-      if (show && !existing) track.appendChild(buildEmptyState());
-      if (!show && existing) existing.remove();
-    }
-
-    // ── Restore state and build the quick-add preset buttons ──
-    window.addEventListener('DOMContentLoaded', () => {
-      const track = document.getElementById('gamesTrack');
-
-      // Restore saved game list, or show the empty state
-      const saved = JSON.parse(localStorage.getItem('gachaGameList') || 'null');
-      if (saved && saved.length > 0) {
-        saved.forEach(g => addGame(g));
+      const saved = loadGames();
+      if (saved.length > 0) {
+        for (const game of saved) addGame(game, { scroll: false });
       } else {
-        updateEmptyState(track, true);
+        updateEmptyState(true);
       }
 
-      // Build the button row in the header: Add Game first, then one button per preset
-      const presetsWrap = document.createElement('div');
-      presetsWrap.className = 'presets-wrap';
-
-      const addBtn = document.createElement('button');
-      addBtn.id = 'addGameBtn';
-      addBtn.className = 'add-btn';
-      addBtn.innerHTML = '<span>＋</span> Add Game';
-      addBtn.onclick = () => addGame();
-      presetsWrap.appendChild(addBtn);
-
-      PRESETS.forEach(p => {
-        const btn = document.createElement('button');
-        btn.className = 'preset-btn';
-        btn.textContent = '＋ ' + p.name;
-        btn.onclick = () => addGame(p);
-        presetsWrap.appendChild(btn);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') tick();
+        ensureTicker();
       });
 
-      document.querySelector('.page-header').appendChild(presetsWrap);
-    });
+      /* Debounced writes must not be lost when the tab is closed or backgrounded. */
+      window.addEventListener('pagehide', flushSave);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') flushSave();
+      });
 
-    // ── PWA: register the service worker for offline support & installability ──
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch((err) => {
-          console.warn('Service worker registration failed:', err);
+      /* ── PWA: register the service worker for offline support ─────────── */
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch((err) => {
+            console.warn('Service worker registration failed:', err);
+          });
         });
-      });
-    }
+      }
+    })();
   </script>
 </body>
 

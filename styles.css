@@ -1,0 +1,573 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:root {
+  --bg: #0d0f1a;
+  --surface: #161929;
+  --surface2: #1e2338;
+  --border: rgba(130, 150, 255, 0.15);
+  --accent: #7c8dff;
+  --accent2: #a78bfa;
+  --accent3: #38bdf8;
+  --text: #e2e6ff;
+  --muted: #8892b0;
+  --success: #34d399;
+  --danger: #f87171;
+  --glow: color-mix(in srgb, var(--accent) 25%, transparent);
+  --gradient: linear-gradient(135deg, var(--accent), var(--accent2));
+  /* Page gutter; the mobile query only needs to change this. */
+  --pad: 2rem;
+  /* Self-contained font stack: no third-party request, works offline and
+     leaks nothing to a font CDN. */
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent),
+    radial-gradient(ellipse 50% 40% at 90% 90%, color-mix(in srgb, var(--accent2) 7%, transparent), transparent);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Visible focus ring for keyboard users everywhere. */
+:focus-visible {
+  outline: 2px solid var(--accent3);
+  outline-offset: 2px;
+}
+
+/* ── Shared pieces ── */
+
+.label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.gradient-text {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-primary {
+  background: var(--gradient);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.btn-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+
+/* ── Page header ── */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem var(--pad);
+  /* Respect the safe area (notch / status bar) when installed. */
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+  padding-left: calc(var(--pad) + env(safe-area-inset-left));
+  padding-right: calc(var(--pad) + env(safe-area-inset-right));
+  border-bottom: 1px solid var(--border);
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.page-title .icon {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 7px;
+  filter: drop-shadow(0 0 12px var(--accent));
+}
+
+.page-title h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.presets-wrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ── Cards area ── */
+
+.games {
+  flex: 1;
+  padding: var(--pad);
+}
+
+.games-grid {
+  display: grid;
+  /* Cap columns at 300px but let them shrink on very narrow screens
+     instead of overflowing the viewport. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 300px));
+  gap: 1.25rem;
+  justify-content: center;
+  align-content: start;
+}
+
+.noscript {
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ── Game card ── */
+
+.game-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeUp 0.25s ease;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.game-card.is-removing {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.game-name-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.2rem 0;
+  /* Transparent rather than none: forced-colors mode repaints it, so the
+     focus indicator survives there. */
+  outline: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.game-name-input:focus {
+  border-bottom-color: var(--accent);
+}
+
+.game-name-input::placeholder {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1;
+  min-width: 1.75rem;
+  padding: 0.3rem 0.45rem;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.icon-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.icon-btn.is-danger {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+}
+
+.icon-btn.is-danger:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Inputs: 2x2, collapsing to one column if the card gets very narrow. */
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.field .label {
+  margin-bottom: 0.4rem;
+}
+
+.field input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+.field input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.field input::placeholder {
+  color: var(--muted);
+}
+
+.error-msg {
+  color: var(--danger);
+  font-size: 0.78rem;
+  margin-top: -0.4rem;
+}
+
+.error-msg:empty {
+  display: none;
+}
+
+/* Stamina bar */
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.bar-track {
+  background: var(--surface2);
+  border-radius: 100px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 6px var(--glow);
+}
+
+/* Result */
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: fadeUp 0.25s ease;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.result-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 0.75rem;
+  text-align: center;
+}
+
+.result-card .label {
+  font-size: 0.68rem;
+  margin-bottom: 0.35rem;
+}
+
+.rc-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background-image: linear-gradient(135deg, var(--accent3), var(--accent));
+}
+
+.rc-sub {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.full-message {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--success) 12%, transparent), color-mix(in srgb, var(--success) 4%, transparent));
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  border-radius: 12px;
+  padding: 0.85rem;
+  text-align: center;
+  color: var(--success);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.target-line {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.target-line.is-reached {
+  color: var(--success);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 300px;
+  background: none;
+  border: 1.5px dashed var(--border);
+  border-radius: 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 2rem;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.empty-state:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.empty-state .es-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+}
+
+/* ── Footer ── */
+
+.page-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem var(--pad);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+
+.footer-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+
+.github-link:hover {
+  color: var(--text);
+}
+
+.github-link svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* ── Toast ── */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: calc(100% - 2rem);
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  font-size: 0.85rem;
+  transform: translate(-50%, 1rem);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+}
+
+.toast.is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.toast-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.78rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Mobile: stack the header so the title stays at the top ── */
+@media (max-width: 640px) {
+  :root {
+    --pad: 1.25rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: calc(1.25rem + env(safe-area-inset-top));
+    padding-bottom: 1.25rem;
+  }
+
+  .presets-wrap {
+    justify-content: flex-start;
+  }
+}
+
+/* Gradient text is invisible in Windows high-contrast mode. */
+@media (forced-colors: active) {
+  .gradient-text {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

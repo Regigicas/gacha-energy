@@ -37,8 +37,10 @@
   <meta name="twitter:card" content="summary" />
 
   <link rel="stylesheet" href="styles.css" />
-  <link rel="modulepreload" href="stamina.js" />
-  <script type="module" src="app.js"></script>
+  <!-- Classic deferred scripts, not modules: browsers block ES modules on
+       file://, and the app should also work when opened straight from disk. -->
+  <script src="stamina.js" defer></script>
+  <script src="app.js" defer></script>
 </head>
 
 <body>

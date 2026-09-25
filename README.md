@@ -2,7 +2,8 @@
 
 Track stamina replenishment across multiple gacha games at once.
 
-A dependency-free, installable web app. Add a card per game, enter your current
+A static, dependency-free, installable web app — no build step and no Node
+needed to run it. Add a card per game, enter your current
 stamina, and it tells you how long until it refills — with a live countdown that
 keeps ticking, and stamina that keeps regenerating while the app is closed.
 
@@ -21,21 +22,24 @@ keeps ticking, and stamina that keeps regenerating while the app is closed.
 - Everything is saved locally in `localStorage`; nothing leaves your device
 - Installable PWA with full offline support (Apple, Android and Windows)
 
-## Running locally
+## Running it
 
-Any static file server works. ES modules and the service worker need a real
-origin, so open it over HTTP rather than as a `file://` URL:
+- **Publish:** push to GitHub and serve the repository root with GitHub Pages.
+- **Locally:** open `index.html` in a browser. Everything works except offline
+  support and installing, which need a service worker and therefore a real
+  origin. To try those too, serve the folder over HTTP:
 
-```bash
-python -m http.server 8123
-```
+  ```bash
+  python -m http.server 8123
+  ```
 
-Then visit <http://localhost:8123>.
+  Then visit <http://localhost:8123>.
 
 ## Tests
 
-The stamina maths lives in `stamina.js`, which has no DOM access, so it runs
-under Node's built-in test runner — no install step:
+Only needed when changing the code. The stamina maths lives in `stamina.js`,
+which has no DOM access, so it runs under Node's built-in test runner — no
+install step, no `package.json`:
 
 ```bash
 node --test
@@ -49,7 +53,7 @@ node --test
 | `styles.css`            | All styles                                                |
 | `app.js`                | DOM, persistence, countdown, notifications                |
 | `stamina.js`            | Pure logic: the game model, regen maths, formatting       |
-| `tests/`                | Unit tests for `stamina.js` (`node --test`)               |
+| `tests/`                | Unit tests for `stamina.js` (`node --test`, dev only)     |
 | `sw.js`                 | Service worker: network-first, cache fallback for offline |
 | `manifest.webmanifest`  | PWA metadata and icons                                    |
 | `icons/`                | App icons, including maskable variants                    |
@@ -66,6 +70,9 @@ node --test
   origin, and therefore one `localStorage`. The card is cloned from a
   `<template>` and values are assigned through `.value` / `.textContent`; keep it
   that way. Everything read back goes through `parseState` / `normalizeGame`.
+- The scripts are classic `defer` scripts, not ES modules, because browsers
+  refuse to load modules from `file://`. `stamina.js` exposes one global,
+  `Stamina`; `app.js` reads from it.
 - The CSP allows no inline script or style. Keep it that way: no `style="…"`
   attributes, no inline handlers.
 - The service worker is network-first, so deploys reach users on their next

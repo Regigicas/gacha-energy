@@ -1,9 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+
+/* stamina.js is a classic browser script that sets globalThis.Stamina. Run it
+   in this realm (not a fresh vm context) so deepEqual sees the same
+   Object.prototype on both sides. */
+const path = fileURLToPath(new URL('../stamina.js', import.meta.url));
+vm.runInThisContext(readFileSync(path, 'utf8'), { filename: path });
+
+const {
   MAX_GAMES, NAME_MAX, toNumberOrNull, normalizeGame, parseState, serializeState,
   validate, validateTarget, staminaAt, timeToReach, reanchor, formatDuration, dayLabel, tidy,
-} from '../stamina.js';
+} = globalThis.Stamina;
 
 const MIN = 60000;
 const T0 = Date.UTC(2026, 0, 15, 12, 0, 0);

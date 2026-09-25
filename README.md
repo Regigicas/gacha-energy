@@ -10,8 +10,8 @@ keeps ticking, and stamina that keeps regenerating while the app is closed.
 
 ## Features
 
-- One card per game, with quick-add presets for Genshin Impact, Honkai: Star Rail,
-  Zenless Zone Zero, Wuthering Waves and Arknights
+- One card per game, with quick-add presets for Genshin Impact, Honkai: Star Rail
+  and Zenless Zone Zero
 - Live countdown and a stamina bar that fills in real time
 - Stamina regenerates while the app is closed — reopen it and the numbers are already current
 - Optional target per game ("when will I have 40?")

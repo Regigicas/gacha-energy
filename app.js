@@ -20,8 +20,6 @@ const PRESETS = [
   { name: 'Genshin Impact', max: 200, regen: 8 },
   { name: 'Honkai: Star Rail', max: 240, regen: 6 },
   { name: 'Zenless Zone Zero', max: 240, regen: 6 },
-  { name: 'Wuthering Waves', max: 240, regen: 6 },
-  { name: 'Arknights', max: 135, regen: 6 },
 ];
 
 const $ = (id) => document.getElementById(id);

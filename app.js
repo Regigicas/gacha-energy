@@ -307,8 +307,8 @@
       scheduleSave();
     });
 
+    fillFields(entry);
     for (const [field, input] of Object.entries(el.fields)) {
-      input.value = game[field] === null ? '' : tidy(game[field]);
       input.addEventListener('input', () => onFieldInput(entry, field));
       input.addEventListener('change', () => refresh(entry, { explain: true }));
       input.addEventListener('keydown', (event) => {
@@ -320,6 +320,13 @@
     el.next.addEventListener('click', () => moveGame(entry, 1));
     el.remove.addEventListener('click', () => removeGame(entry));
     return entry;
+  }
+
+  /* Writes the model into the inputs, leaving alone the one being edited. */
+  function fillFields({ game, el }) {
+    for (const [field, input] of Object.entries(el.fields)) {
+      if (input !== document.activeElement) input.value = game[field] === null ? '' : tidy(game[field]);
+    }
   }
 
   function onFieldInput(entry, field) {
@@ -533,6 +540,16 @@
     ensureTicker();
   });
   window.addEventListener('pagehide', flushSave);
+  /* When a discarded tab is reloaded, the browser may put back the numbers the
+     inputs showed before, after the cards were built and without firing input
+     events. The model is the source of truth, so write it back over them. */
+  window.addEventListener('pageshow', () => {
+    const now = Date.now();
+    for (const entry of entries.values()) {
+      fillFields(entry);
+      render(entry, now);
+    }
+  });
 
   /* ── PWA: register the service worker for offline support ───────────────── */
 

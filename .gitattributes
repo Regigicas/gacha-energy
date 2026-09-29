@@ -1,0 +1,4 @@
+# Keep LF everywhere, whatever core.autocrlf says on the machine.
+* text=auto eol=lf
+
+*.png binary
